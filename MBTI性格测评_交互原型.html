@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBTI 性格测评 — 交互原型</title>
+<style>
+:root{
+  --ink:#1a2a3a; --ink2:#3a4a5a; --muted:#8a9aaa; --line:#dde4ea;
+  --accent:#1a5276; --accent2:#2e86c1; --accent-bg:#eaf2f8;
+  --warn:#e67e22; --warn-bg:#fdf2e9;
+  --phone-bg:#f4f6f8; --card:#fff; --shadow:0 4px 24px rgba(0,0,0,.12);
+  --radius:10px; --mono:"SF Mono","Consolas","Microsoft YaHei",monospace;
+  --sans:"Microsoft YaHei","PingFang SC","Helvetica Neue",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:#eef1f4;color:var(--ink);line-height:1.6}
+
+/* ============ 顶栏 ============ */
+.topbar{
+  background:var(--ink);color:#fff;padding:14px 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.topbar h1{font-size:1.05em;font-weight:600;letter-spacing:1px}
+.topbar .meta{font-size:.75em;opacity:.6}
+.topbar .mode-btns{display:flex;gap:8px}
+.mode-btn{
+  background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;
+  padding:6px 16px;border-radius:6px;font-size:.78em;cursor:pointer;
+  font-family:var(--sans);transition:.2s;
+}
+.mode-btn.active{background:var(--accent2);border-color:var(--accent2)}
+.mode-btn:hover{border-color:var(--accent2)}
+
+/* ============ 主布局 ============ */
+.layout{display:flex;min-height:calc(100vh - 52px)}
+.sidebar{width:380px;flex:none;background:#fff;border-right:1px solid var(--line);padding:24px;overflow-y:auto;max-height:calc(100vh - 52px);position:sticky;top:52px}
+.stage{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:40px 40px 80px;overflow:auto}
+
+/* ============ 侧栏 ============ */
+.side-section{margin-bottom:32px}
+.side-section > h2{
+  font-size:.82em;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;
+  padding-bottom:8px;border-bottom:1px solid var(--line);
+}
+
+/* 流程图 */
+.flow{display:flex;flex-direction:column;gap:0}
+.flow-node{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border:1px solid var(--line);border-radius:8px;margin-bottom:0;
+  cursor:pointer;transition:.2s;background:#fff;font-size:.85em;
+  position:relative;
+}
+.flow-node:hover{border-color:var(--accent2);background:var(--accent-bg)}
+.flow-node.active{border-color:var(--accent);background:var(--accent-bg);color:var(--accent);font-weight:600}
+.flow-node .num{
+  width:22px;height:22px;border-radius:50%;background:var(--accent);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:.72em;font-weight:700;flex:none;
+}
+.flow-node.active .num{background:var(--accent)}
+.flow-arrow{text-align:center;color:var(--muted);font-size:.7em;padding:3px 0;margin-left:32px}
+.flow-node .tag{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  font-size:.65em;color:var(--muted);font-family:var(--mono);
+}
+
+/* 屏幕索引 */
+.screen-list{display:flex;flex-direction:column;gap:8px}
+.screen-item{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border:1px solid var(--line);border-radius:8px;cursor:pointer;
+  transition:.2s;font-size:.85em;
+}
+.screen-item:hover{border-color:var(--accent2);background:var(--accent-bg)}
+.screen-item.active{border-color:var(--accent);background:var(--accent-bg)}
+.screen-item .dot{width:10px;height:10px;border-radius:50%;background:var(--line);flex:none}
+.screen-item.active .dot{background:var(--accent)}
+.screen-item .id{font-family:var(--mono);font-size:.78em;color:var(--muted)}
+
+/* 功能对照表 */
+.feat-table{font-size:.78em;width:100%;border-collapse:collapse}
+.feat-table th{font-weight:600;color:var(--muted);font-size:.72em;text-transform:uppercase;letter-spacing:1px;padding:6px 8px 4px;text-align:left}
+.feat-table td{padding:5px 8px;border-top:1px solid var(--line)}
+.feat-table .p0{color:var(--accent);font-weight:700}
+.feat-table .p1{color:var(--accent2);font-weight:600}
+.feat-table .p2{color:var(--muted)}
+.feat-table .fid{font-family:var(--mono);font-size:.82em}
+
+/* ============ 手机框 ============ */
+.phone-wrap{position:relative}
+.phone{
+  width:375px;height:720px;background:var(--phone-bg);
+  border:12px solid #2a2a2a;border-radius:36px;
+  box-shadow:var(--shadow);overflow:hidden;position:relative;
+}
+.phone .notch{
+  position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:150px;height:22px;background:#2a2a2a;border-radius:0 0 14px 14px;z-index:10;
+}
+.phone-screen{width:100%;height:100%;overflow-y:auto;overflow-x:hidden;position:relative}
+.phone-screen::-webkit-scrollbar{display:none}
+
+/* 屏幕标签 */
+.screen-label{
+  position:absolute;top:-32px;left:50%;transform:translateX(-50%);
+  font-family:var(--mono);font-size:.8em;color:var(--muted);
+  background:#fff;padding:4px 14px;border-radius:6px;border:1px solid var(--line);
+  white-space:nowrap;
+}
+
+/* ============ 标注模式 ============ */
+.annotation-layer{position:absolute;top:0;left:375px;width:0;height:100%}
+.anno-item{
+  position:absolute;left:8px;width:280px;
+  background:#fff;border:1px solid var(--line);border-radius:8px;
+  padding:10px 14px;box-shadow:0 2px 8px rgba(0,0,0,.06);
+  font-size:.78em;line-height:1.5;z-index:50;
+  opacity:0;pointer-events:none;transition:opacity .3s;
+}
+.proto.annotate-mode .anno-item{opacity:1;pointer-events:auto}
+.anno-item .anno-id{
+  display:inline-block;font-family:var(--mono);font-size:.72em;
+  background:var(--accent);color:#fff;padding:2px 7px;border-radius:4px;
+  margin-right:6px;font-weight:600;
+}
+.anno-item .anno-pri{font-size:.7em;color:var(--muted);float:right;margin-top:3px}
+.anno-item .anno-text{margin-top:6px;color:var(--ink2)}
+
+/* 标注引导线 */
+.anno-line{
+  position:absolute;left:0;width:8px;height:1px;background:var(--accent2);
+  opacity:0;transition:opacity .3s;z-index:49;
+}
+.proto.annotate-mode .anno-line{opacity:.5}
+
+/* ============ 手机屏幕内部样式 ============ */
+.ps-header{background:var(--accent);color:#fff;padding:16px 14px;text-align:center}
+.ps-header h2{font-size:1.1em;font-weight:600;letter-spacing:2px}
+.ps-header p{font-size:.7em;opacity:.7;margin-top:3px}
+.ps-body{padding:20px 16px}
+.ps-muted{color:#7f8c8d;font-size:.82em;line-height:1.7}
+
+/* 首页 */
+.ps-card{background:#fff;border-radius:10px;padding:22px 18px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:16px}
+.ps-card h3{font-size:1.05em;color:var(--accent);margin-bottom:10px}
+.ps-intro{border-left:3px solid var(--accent2);padding-left:10px;font-size:.9em;line-height:1.8;color:var(--ink);margin:10px 0}
+.ps-record-box{background:var(--accent-bg);border:1px dashed var(--accent2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:.85em}
+.ps-record-box .t{color:var(--accent);font-weight:600;font-size:1em}
+.ps-record-box .time{font-size:.8em;color:var(--muted)}
+.ps-btn{display:block;width:100%;border:none;border-radius:8px;padding:13px 0;font-size:.95em;font-weight:600;cursor:pointer;font-family:var(--sans);transition:.2s;text-align:center}
+.ps-btn-primary{background:var(--accent);color:#fff}
+.ps-btn-primary:hover{background:var(--accent2)}
+.ps-btn-secondary{background:#fff;color:var(--accent);border:1.5px solid var(--accent);margin-top:10px}
+.ps-btn-ghost{background:transparent;color:var(--muted);border:none;margin-top:8px;font-size:.82em;text-decoration:underline}
+
+/* 答题页 */
+.ps-progress-row{display:flex;justify-content:space-between;font-size:.8em;color:var(--muted);margin-bottom:6px}
+.ps-prog-bar{height:7px;background:#e5e8e8;border-radius:4px;overflow:hidden;margin-bottom:20px}
+.ps-prog-bar > div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s}
+.ps-q-text{font-size:1.05em;font-weight:600;line-height:1.7;margin-bottom:20px}
+.ps-opts{display:flex;flex-direction:column;gap:12px}
+.ps-opt{border:1.5px solid var(--line);border-radius:10px;padding:14px 16px;font-size:.92em;cursor:pointer;background:#fff;transition:.15s;display:flex;align-items:flex-start;gap:10px;text-align:left;font-family:var(--sans);color:var(--ink)}
+.ps-opt .badge{flex:none;width:24px;height:24px;border-radius:50%;background:#f0f0f0;color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:.75em;font-weight:700;margin-top:1px}
+.ps-opt:hover{border-color:var(--accent2)}
+.ps-opt.selected{border-color:var(--accent);background:var(--accent-bg)}
+.ps-opt.selected .badge{background:var(--accent);color:#fff}
+.ps-quiz-nav{display:flex;justify-content:space-between;margin-top:18px}
+.ps-quiz-nav .ps-btn{width:auto;padding:9px 22px}
+.ps-back-btn{background:#fff;color:var(--muted);border:1.5px solid var(--line)}
+.ps-back-btn:disabled{opacity:.3;cursor:not-allowed}
+.ps-next-btn{background:var(--accent);color:#fff}
+.ps-next-btn:disabled{opacity:.3;cursor:not-allowed}
+
+/* 结果页 */
+.ps-type-badge{text-align:center;margin-bottom:4px}
+.ps-type-badge .letters{font-size:2.8em;font-weight:800;color:var(--accent);letter-spacing:6px}
+.ps-type-badge .nickname{color:var(--muted);font-size:.9em;margin-top:2px}
+.ps-dim{margin-top:22px}
+.ps-dim-title{display:flex;justify-content:space-between;font-size:.8em;color:var(--muted);margin-bottom:5px}
+.ps-dim-title b{color:var(--ink);font-size:.95em}
+.ps-dim-bar{display:flex;height:30px;border-radius:15px;overflow:hidden;font-size:.7em;color:#fff}
+.ps-dim-bar .side{display:flex;align-items:center;justify-content:center;min-width:22%;transition:width .4s}
+.ps-dim-bar .left{background:var(--accent)}
+.ps-dim-bar .right{background:var(--accent2)}
+.ps-dim-note{font-size:.72em;color:var(--muted);text-align:center;margin-top:3px}
+.ps-desc-title{margin:24px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--accent);color:var(--accent);font-weight:700;font-size:.98em}
+.ps-desc-body{line-height:1.85;font-size:.9em;text-align:justify}
+.ps-meta-row{margin-top:14px;font-size:.74em;color:var(--muted);text-align:center}
+.ps-disclaimer{margin-top:20px;padding:10px 12px;background:var(--warn-bg);border-radius:8px;color:#a04000;font-size:.74em;line-height:1.6}
+
+/* 页脚 */
+.ps-footer{padding:10px 14px;text-align:center;color:var(--muted);font-size:.66em;background:#ecf0f1;margin-top:auto}
+
+/* 隐藏 */
+.hidden{display:none!important}
+
+/* 导航点（阶段指示） */
+.stage-dots{display:flex;gap:6px;margin-top:10px;justify-content:center}
+.stage-dot{width:8px;height:8px;border-radius:50%;background:var(--line);cursor:pointer;transition:.2s}
+.stage-dot.active{background:var(--accent)}
+
+/* 侧栏切换 */
+.side-tab{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--line)}
+.side-tab-btn{flex:1;padding:8px 0;font-size:.82em;font-weight:600;color:var(--muted);border:none;background:transparent;cursor:pointer;border-bottom:2px solid transparent;font-family:var(--sans)}
+.side-tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.side-panel{display:none}
+.side-panel.active{display:block}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>MBTI 性格测评 — 交互原型</h1>
+    <div class="meta">基于 PRD V1.0 · 中国通服 AI 人才认证培训班</div>
+  </div>
+  <div class="mode-btns">
+    <button class="mode-btn active" id="mode-interactive" onclick="setMode('interactive')">交互模式</button>
+    <button class="mode-btn" id="mode-annotate" onclick="setMode('annotate')">标注模式</button>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- 侧栏 -->
+  <div class="sidebar">
+    <div class="side-tab">
+      <button class="side-tab-btn active" onclick="switchTab('flow')">流程</button>
+      <button class="side-tab-btn" onclick="switchTab('screen')">屏幕</button>
+      <button class="side-tab-btn" onclick="switchTab('feature')">功能</button>
+    </div>
+
+    <!-- 流程 -->
+    <div class="side-panel active" id="panel-flow">
+      <div class="side-section">
+        <h2>用户流程</h2>
+        <div class="flow">
+          <div class="flow-node active" onclick="goScreen('home-no-record')">
+            <div class="num">1</div><span>打开页面（无记录）</span>
+            <span class="tag">S1</span>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node" onclick="goScreen('quiz')">
+            <div class="num">2</div><span>开始测评 · 逐题作答</span>
+            <span class="tag">S3</span>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node" onclick="goScreen('result')">
+            <div class="num">3</div><span>计分完成 · 结果页</span>
+            <span class="tag">S5</span>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node" onclick="goScreen('home-with-record')">
+            <div class="num">4</div><span>再次打开 · 回看入口</span>
+            <span class="tag">S2</span>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node" onclick="goScreen('result-review')">
+            <div class="num">5</div><span>查看上次结果</span>
+            <span class="tag">S6</span>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node" onclick="goScreen('confirm-clear')">
+            <div class="num">6</div><span>清除记录确认</span>
+            <span class="tag">S7</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 屏幕索引 -->
+    <div class="side-panel" id="panel-screen">
+      <div class="side-section">
+        <h2>屏幕索引（7 屏）</h2>
+        <div class="screen-list">
+          <div class="screen-item active" onclick="goScreen('home-no-record')"><div class="dot"></div><span><span class="id">S1</span> 首页 — 无记录</span></div>
+          <div class="screen-item" onclick="goScreen('home-with-record')"><div class="dot"></div><span><span class="id">S2</span> 首页 — 有记录</span></div>
+          <div class="screen-item" onclick="goScreen('quiz')"><div class="dot"></div><span><span class="id">S3</span> 答题页 — 逐题作答</span></div>
+          <div class="screen-item" onclick="goScreen('quiz-mid')"><div class="dot"></div><span><span class="id">S4</span> 答题页 — 中途进度</span></div>
+          <div class="screen-item" onclick="goScreen('result')"><div class="dot"></div><span><span class="id">S5</span> 结果页 — 新测评</span></div>
+          <div class="screen-item" onclick="goScreen('result-review')"><div class="dot"></div><span><span class="id">S6</span> 结果页 — 回看</span></div>
+          <div class="screen-item" onclick="goScreen('confirm-clear')"><div class="dot"></div><span><span class="id">S7</span> 清除记录确认</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 功能对照 -->
+    <div class="side-panel" id="panel-feature">
+      <div class="side-section">
+        <h2>PRD 功能对照</h2>
+        <table class="feat-table">
+          <tr><th>编号</th><th>功能</th><th>优先级</th><th>关联屏</th></tr>
+          <tr><td class="fid">F-01</td><td>题库模块</td><td class="p0">P0</td><td>S3</td></tr>
+          <tr><td class="fid">F-02</td><td>答题交互</td><td class="p0">P0</td><td>S3 S4</td></tr>
+          <tr><td class="fid">F-03</td><td>计分引擎</td><td class="p0">P0</td><td>S5</td></tr>
+          <tr><td class="fid">F-04</td><td>结果呈现</td><td class="p0">P0</td><td>S5 S6</td></tr>
+          <tr><td class="fid">F-05</td><td>记录保存与回看</td><td class="p0">P0</td><td>S2 S6</td></tr>
+          <tr><td class="fid">F-06</td><td>重测功能</td><td class="p0">P0</td><td>S5 S2</td></tr>
+          <tr><td class="fid">F-07</td><td>首页记录检测</td><td class="p1">P1</td><td>S1 S2</td></tr>
+          <tr><td class="fid">F-08</td><td>免责声明</td><td class="p1">P1</td><td>S5 S6</td></tr>
+          <tr><td class="fid">F-09</td><td>进度可视化</td><td class="p1">P1</td><td>S3 S4</td></tr>
+          <tr><td class="fid">F-10</td><td>移动端适配</td><td class="p1">P1</td><td>全局</td></tr>
+          <tr><td class="fid">F-11</td><td>结果导出分享</td><td class="p2">P2</td><td>—</td></tr>
+          <tr><td class="fid">F-12</td><td>历史记录列表</td><td class="p2">P2</td><td>—</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 手机舞台 -->
+  <div class="stage">
+    <div class="phone-wrap proto" id="proto">
+      <div class="screen-label" id="screen-label">S1 · 首页 — 无记录</div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="phone-screen" id="phone-screen">
+          <!-- 屏幕内容由 JS 渲染 -->
+        </div>
+      </div>
+      <!-- 标注层 -->
+      <div class="annotation-layer" id="anno-layer"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ==================================================================
+ * 屏幕数据
+ * ================================================================== */
+const SCREENS = {
+  "home-no-record": {id:"S1", title:"首页 — 无记录"},
+  "home-with-record": {id:"S2", title:"首页 — 有记录"},
+  "quiz": {id:"S3", title:"答题页 — 逐题作答"},
+  "quiz-mid": {id:"S4", title:"答题页 — 中途进度"},
+  "result": {id:"S5", title:"结果页 — 新测评"},
+  "result-review": {id:"S6", title:"结果页 — 回看"},
+  "confirm-clear": {id:"S7", title:"清除记录确认"}
+};
+
+/* 标注数据：每个屏幕的交互热点 */
+const ANNOTATIONS = {
+  "home-no-record": [
+    {top:70, fid:"F-07", pri:"P1", text:"检测到本机无记录时，直接显示开始测评入口"},
+    {top:150, fid:"F-01", pri:"P0", text:"展示题量与测评维度说明，预期耗时 3~5 分钟"},
+  ],
+  "home-with-record": [
+    {top:70, fid:"F-07", pri:"P1", text:"检测到 localStorage 记录时，优先展示回看入口而非开始按钮"},
+    {top:110, fid:"F-05", pri:"P0", text:"记录概要：类型 · 昵称 · 完成时间，数据来自 localStorage"},
+    {top:190, fid:"F-05", pri:"P0", text:"查看上次结果：跳过答题直达结果页"},
+    {top:240, fid:"F-06", pri:"P0", text:"重新开始测评：清空当前作答，回到第 1 题"},
+    {top:285, fid:"F-05", pri:"P0", text:"清除本机记录：弹出确认框，确认后删除 localStorage 数据"},
+  ],
+  "quiz": [
+    {top:65, fid:"F-09", pri:"P1", text:"进度标签：当前题号 / 总题数 + 当前维度名称"},
+    {top:85, fid:"F-09", pri:"P1", text:"进度条：随题号增长平滑填充"},
+    {top:120, fid:"F-01", pri:"P0", text:"题干：自编二选一题目，无版权风险"},
+    {top:175, fid:"F-02", pri:"P0", text:"选项 A/B：点击选中后自动进入下一题"},
+    {top:240, fid:"F-02", pri:"P0", text:"上一题：回退修改答案，选中态正确恢复（第 1 题禁用）"},
+    {top:240, fid:"F-02", pri:"P0", text:"下一题：未作答时禁用；最后一题变为「查看结果」"},
+  ],
+  "quiz-mid": [
+    {top:65, fid:"F-09", pri:"P1", text:"进度 50% 时：条体半满，维度随题目切换"},
+    {top:175, fid:"F-02", pri:"P0", text:"已答过的题：选中态高亮，可回退修改"},
+  ],
+  "result": [
+    {top:70, fid:"F-04", pri:"P0", text:"四字母类型大字 + 昵称，16 型全覆盖"},
+    {top:130, fid:"F-04", pri:"P0", text:"四维度双向百分比条：倾向度可视化"},
+    {top:260, fid:"F-04", pri:"P0", text:"类型解读：对应 16 型的性格描述段落"},
+    {top:330, fid:"F-08", pri:"P1", text:"免责声明：非专业心理测评，仅供娱乐参考"},
+    {top:370, fid:"F-06", pri:"P0", text:"重新测评：清空作答回到第 1 题，新结果覆盖旧记录"},
+    {top:410, fid:"F-05", pri:"P0", text:"清除本机记录：弹出确认框"},
+  ],
+  "result-review": [
+    {top:70, fid:"F-04", pri:"P0", text:"与新建结果页布局一致，但标注「上次测评记录」"},
+    {top:130, fid:"F-05", pri:"P0", text:"维度百分比来自 localStorage 存储的上次结果"},
+    {top:300, fid:"F-08", pri:"P1", text:"声明同步展示"},
+    {top:330, fid:"F-06", pri:"P0", text:"重新测评：开始新一轮作答"},
+  ],
+  "confirm-clear": [
+    {top:180, fid:"F-05", pri:"P0", text:"确认弹窗：清除后不可恢复，需用户二次确认"},
+    {top:260, fid:"F-05", pri:"P0", text:"确认清除 → 删除 localStorage → 回到无记录首页"},
+    {top:310, fid:"F-05", pri:"P0", text:"取消 → 返回上一屏，记录保留"},
+  ],
+};
+
+/* 演示用题库（精简 4 题） */
+const DEMO_QUESTIONS = [
+  {text:"参加一场几乎全是陌生人的聚会，你的状态更接近？",a:"E",aText:"主动搭话、认识新朋友，越聊越有精神",b:"I",bText:"找个熟人角落待着，或者干脆少去",dim:"EI",dimName:"能量来源"},
+  {text:"读一份工作报告，你更关注？",a:"S",aText:"数据、事实和具体细节",b:"N",bText:"背后的思路和未来的可能性",dim:"SN",dimName:"信息获取"},
+  {text:"朋友向你吐槽工作委屈，你的第一反应是？",a:"T",aText:"帮他分析问题出在哪、该怎么办",b:"F",bText:"先安慰他，站在他这边一起骂两句",dim:"TF",dimName:"决策方式"},
+  {text:"计划已久的周末出游临时有变，你的反应是？",a:"J",aText:"烦，好好的计划被打乱了",b:"P",bText:"正好，说不定有意外惊喜",dim:"JP",dimName:"生活态度"},
+];
+
+/* 演示用结果 */
+const DEMO_RESULT = {
+  type:"ESTJ", nickname:"总经理",
+  dims:{
+    EI:{left:75,right:25,lName:"外向 E",rName:"内向 I"},
+    SN:{left:63,right:37,lName:"实感 S",rName:"直觉 N"},
+    TF:{left:88,right:12,lName:"思考 T",rName:"情感 F"},
+    JP:{left:75,right:25,lName:"判断 J",rName:"知觉 P"},
+  },
+  desc:"你务实、果断，天然的组织者，擅长把混乱整理成秩序，把计划推进到底。规则和效率是你的信仰。偶尔蹲下来听听\"不划算但重要\"的声音，管理会从正确走向服气。"
+};
+
+const REVIEW_RESULT = {
+  type:"INFJ", nickname:"提倡者",
+  dims:{
+    EI:{left:38,right:62,lName:"外向 E",rName:"内向 I"},
+    SN:{left:25,right:75,lName:"实感 S",rName:"直觉 N"},
+    TF:{left:37,right:63,lName:"思考 T",rName:"情感 F"},
+    JP:{left:63,right:37,lName:"判断 J",rName:"知觉 P"},
+  },
+  desc:"你外表温和、内里有清晰的原则，关心人的成长，也追求意义感。洞察力强，常常一语中的。别让\"体谅所有人\"变成耗尽自己的理由，你的感受同样值得被优先照顾。"
+};
+
+/* ==================================================================
+ * 渲染引擎
+ * ================================================================== */
+let currentScreen = "home-no-record";
+let mode = "interactive";
+let quizIdx = 0; /* 演示答题索引 */
+let quizAnswers = [];
+
+function $(id){ return document.getElementById(id); }
+function el(html){ const d=document.createElement("div"); d.innerHTML=html; return d.firstElementChild; }
+
+function render(screenId){
+  currentScreen = screenId;
+  const scr = SCREENS[screenId];
+  $("screen-label").textContent = scr.id + " · " + scr.title;
+
+  /* 更新侧栏 active */
+  document.querySelectorAll(".flow-node").forEach(n=>n.classList.remove("active"));
+  document.querySelectorAll(".screen-item").forEach(n=>n.classList.remove("active"));
+  const fn = document.querySelector('.flow-node[onclick*="'+screenId+'"]');
+  if(fn) fn.classList.add("active");
+  const si = document.querySelector('.screen-item[onclick*="'+screenId+'"]');
+  if(si) si.classList.add("active");
+
+  /* 渲染屏幕内容 */
+  const screen = $("phone-screen");
+  screen.innerHTML = "";
+  quizIdx = 0;
+  quizAnswers = [];
+
+  switch(screenId){
+    case "home-no-record": renderHomeNoRecord(screen); break;
+    case "home-with-record": renderHomeWithRecord(screen); break;
+    case "quiz": renderQuiz(screen, 0); break;
+    case "quiz-mid": renderQuiz(screen, 15); break;
+    case "result": renderResult(screen, DEMO_RESULT, true); break;
+    case "result-review": renderResult(screen, REVIEW_RESULT, false); break;
+    case "confirm-clear": renderConfirmClear(screen); break;
+  }
+
+  /* 渲染标注 */
+  renderAnnotations(screenId);
+}
+
+/* ---------- S1 首页无记录 ---------- */
+function renderHomeNoRecord(screen){
+  screen.innerHTML = `
+    <div class="ps-header"><h2>MBTI 性格测评</h2><p>中国通服 AI 人才认证培训班 · 实践项目</p></div>
+    <div class="ps-body">
+      <div class="ps-card">
+        <h3>开始你的性格测评</h3>
+        <div class="ps-intro">本测试基于 MBTI 四维度理念自编，共 <b>32</b> 道二选一题目，约需 3~5 分钟。结果仅保存于本机浏览器，用于个人参考。</div>
+        <p class="ps-muted">通过你在"能量来源、信息获取、决策方式、生活态度"四个维度上的倾向，得出 16 型人格中与你最相近的一种。没有好坏对错，请凭第一直觉作答。</p>
+        <button class="ps-btn ps-btn-primary" style="margin-top:18px" onclick="goScreen('quiz')">开始测评</button>
+      </div>
+    </div>
+    <div class="ps-footer">基于MBTI四维度理念的自编测试 · 仅供娱乐参考 · 非专业心理测评 · 数据仅存于本机</div>
+  `;
+}
+
+/* ---------- S2 首页有记录 ---------- */
+function renderHomeWithRecord(screen){
+  screen.innerHTML = `
+    <div class="ps-header"><h2>MBTI 性格测评</h2><p>中国通服 AI 人才认证培训班 · 实践项目</p></div>
+    <div class="ps-body">
+      <div class="ps-record-box">
+        检测到上次测评记录（<span class="time">2026-09-15 16:41</span>）
+        <div class="t">INFJ · 提倡者</div>
+        <div class="ps-muted" style="font-size:.78em">保存在本机浏览器中，仅保留最近一次</div>
+      </div>
+      <button class="ps-btn ps-btn-primary" onclick="goScreen('result-review')">查看上次结果</button>
+      <button class="ps-btn ps-btn-secondary" onclick="goScreen('quiz')">重新开始测评</button>
+      <button class="ps-btn ps-btn-ghost" onclick="goScreen('confirm-clear')">清除本机记录</button>
+    </div>
+    <div class="ps-footer">基于MBTI四维度理念的自编测试 · 仅供娱乐参考 · 非专业心理测评 · 数据仅存于本机</div>
+  `;
+}
+
+/* ---------- S3/S4 答题页 ---------- */
+function renderQuiz(screen, questionIdx){
+  const total = 32;
+  const q = DEMO_QUESTIONS[0]; /* 始终显示第 1 题作为示例 */
+  const idx = questionIdx || 0;
+  const progress = (idx / total * 100);
+  screen.innerHTML = `
+    <div class="ps-header"><h2>MBTI 性格测评</h2><p>中国通服 AI 人才认证培训班 · 实践项目</p></div>
+    <div class="ps-body">
+      <div class="ps-card">
+        <div class="ps-progress-row">
+          <span>第 ${idx+1} / ${total} 题</span>
+          <span>${q.dimName}</span>
+        </div>
+        <div class="ps-prog-bar"><div style="width:${progress}%"></div></div>
+        <div class="ps-q-text">${q.text}</div>
+        <div class="ps-opts">
+          <button class="ps-opt ${idx>0 && idx<=2 ? 'selected':''}" onclick="protoQuizChoose('A')">
+            <div class="badge">A</div><span>${q.aText}</span>
+          </button>
+          <button class="ps-opt ${idx===2 ? 'selected':''}" onclick="protoQuizChoose('B')">
+            <div class="badge">B</div><span>${q.bText}</span>
+          </button>
+        </div>
+        <div class="ps-quiz-nav">
+          <button class="ps-btn ps-back-btn" ${idx===0?'disabled':''} onclick="protoQuizBack()">← 上一题</button>
+          <button class="ps-btn ps-next-btn" ${idx===0?'disabled':''} onclick="protoQuizNext()">${idx===total-1?'查看结果 →':'下一题 →'}</button>
+        </div>
+      </div>
+    </div>
+    <div class="ps-footer">基于MBTI四维度理念的自编测试 · 仅供娱乐参考 · 非专业心理测评 · 数据仅存于本机</div>
+  `;
+}
+
+function protoQuizChoose(side){
+  /* 演示：点击后跳到中途进度屏，再点跳到结果 */
+  if(currentScreen === "quiz") goScreen("quiz-mid");
+  else if(currentScreen === "quiz-mid") goScreen("result");
+}
+function protoQuizBack(){
+  if(currentScreen === "quiz-mid") goScreen("quiz");
+}
+function protoQuizNext(){
+  if(currentScreen === "quiz") goScreen("quiz-mid");
+  else if(currentScreen === "quiz-mid") goScreen("result");
+}
+
+/* ---------- S5/S6 结果页 ---------- */
+function renderResult(screen, result, isNew){
+  const meta = isNew ? "本次测评完成 · 2026-09-15 16:41 · 结果仅存于本机" : "上次测评记录 · 2026-09-15 16:41 · 结果仅存于本机";
+  let dimsHTML = "";
+  const dimNames = {EI:"能量来源",SN:"信息获取",TF:"决策方式",JP:"生活态度"};
+  for(const d of ["EI","SN","TF","JP"]){
+    const dim = result.dims[d];
+    dimsHTML += `
+      <div class="ps-dim">
+        <div class="ps-dim-title"><span><b>${dim.lName}</b> ${dimNames[d]}</span><span><b>${dim.rName}</b></span></div>
+        <div class="ps-dim-bar">
+          <div class="side left" style="width:${dim.left}%">${dim.left}%</div>
+          <div class="side right" style="width:${dim.right}%">${dim.right}%</div>
+        </div>
+      </div>`;
+  }
+  screen.innerHTML = `
+    <div class="ps-header"><h2>MBTI 性格测评</h2><p>中国通服 AI 人才认证培训班 · 实践项目</p></div>
+    <div class="ps-body">
+      <div class="ps-card">
+        <div class="ps-type-badge">
+          <div class="letters">${result.type}</div>
+          <div class="nickname">${result.nickname}</div>
+        </div>
+        ${dimsHTML}
+        <div class="ps-desc-title">类型解读</div>
+        <div class="ps-desc-body">${result.desc}</div>
+        <div class="ps-meta-row">${meta}</div>
+        <div class="ps-disclaimer"><b>声明：</b>本测试基于 MBTI 四维度理念自编，仅供娱乐参考，<b>非专业心理测评</b>，结果不构成任何心理咨询、人格诊断或人才评估依据。你的全部作答仅保存在本机浏览器中。</div>
+        <button class="ps-btn ps-btn-primary" style="margin-top:18px" onclick="goScreen('quiz')">重新测评</button>
+        <button class="ps-btn ps-btn-ghost" onclick="goScreen('confirm-clear')">清除本机记录</button>
+      </div>
+    </div>
+    <div class="ps-footer">基于MBTI四维度理念的自编测试 · 仅供娱乐参考 · 非专业心理测评 · 数据仅存于本机</div>
+  `;
+}
+
+/* ---------- S7 清除确认 ---------- */
+function renderConfirmClear(screen){
+  screen.innerHTML = `
+    <div class="ps-header"><h2>MBTI 性格测评</h2><p>中国通服 AI 人才认证培训班 · 实践项目</p></div>
+    <div class="ps-body" style="display:flex;flex-direction:column;justify-content:center;height:calc(100% - 100px)">
+      <div class="ps-card" style="text-align:center">
+        <div style="font-size:2em;margin-bottom:10px">⚠</div>
+        <h3 style="margin-bottom:12px">确定清除本机记录？</h3>
+        <p class="ps-muted" style="margin-bottom:20px">清除后不可恢复，本机保存的测评记录将永久删除。</p>
+        <button class="ps-btn ps-btn-primary" style="background:#e74c3c" onclick="goScreen('home-no-record')">确认清除</button>
+        <button class="ps-btn ps-btn-secondary" onclick="goScreen('result-review')">取消</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ==================================================================
+ * 标注渲染
+ * ================================================================== */
+function renderAnnotations(screenId){
+  const layer = $("anno-layer");
+  layer.innerHTML = "";
+  const annos = ANNOTATIONS[screenId] || [];
+  annos.forEach((a,i)=>{
+    /* 引导线 */
+    const line = document.createElement("div");
+    line.className = "anno-line";
+    line.style.top = (a.top + 4) + "px";
+    line.style.left = "0px";
+    line.style.width = "12px";
+    layer.appendChild(line);
+
+    /* 标注卡 */
+    const card = document.createElement("div");
+    card.className = "anno-item";
+    card.style.top = a.top + "px";
+    card.innerHTML = `
+      <span class="anno-id">${a.fid}</span><span class="anno-pri">${a.pri}</span>
+      <div class="anno-text">${a.text}</div>
+    `;
+    layer.appendChild(card);
+  });
+}
+
+/* ==================================================================
+ * 模式切换
+ * ================================================================== */
+function setMode(m){
+  mode = m;
+  $("mode-interactive").classList.toggle("active", m === "interactive");
+  $("mode-annotate").classList.toggle("active", m === "annotate");
+  $("proto").classList.toggle("annotate-mode", m === "annotate");
+}
+
+/* ==================================================================
+ * 侧栏切换
+ * ================================================================== */
+function switchTab(tab){
+  document.querySelectorAll(".side-tab-btn").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".side-panel").forEach(p=>p.classList.remove("active"));
+  event.target.classList.add("active");
+  $("panel-"+tab).classList.add("active");
+}
+
+/* ==================================================================
+ * 导航
+ * ================================================================== */
+function goScreen(screenId){
+  render(screenId);
+}
+
+/* 启动 */
+render("home-no-record");
+</script>
+</body>
+</html>
